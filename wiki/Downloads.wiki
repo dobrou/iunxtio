@@ -14,3 +14,6 @@ tbd
 
 = Details =
 
+To run the JAR file just open a terminal and type : java -jar Iunxtio-0.0.1-SNAPSHOT.one-jar.jar
+
+That should do the trick
