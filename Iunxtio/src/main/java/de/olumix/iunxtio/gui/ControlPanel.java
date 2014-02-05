@@ -20,7 +20,9 @@ package de.olumix.iunxtio.gui;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.LayoutManager;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -41,7 +43,9 @@ import javax.swing.event.ChangeListener;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
+import java.net.URL;
 import java.util.logging.Logger;
+import javax.swing.ImageIcon;
 
 /**
  * @author hkremmin
@@ -72,6 +76,7 @@ private JSlider apertureSlider;
 		setLayout(null);
 		
 		JButton btnNewButton = new JButton("Shutter Release");
+		btnNewButton.setIcon(new ImageIcon(getImage("images/camera-photo.png")));
 		btnNewButton.setFont(new Font("Tahoma", Font.BOLD, 18));
 		btnNewButton.setBackground(new Color(135, 206, 250));
 		btnNewButton.addActionListener(new ActionListener() {
@@ -86,10 +91,7 @@ private JSlider apertureSlider;
 		separator.setBounds(12, 359, 426, 12);
 		add(separator);
 		
-		JSlider focusSlider = new JSlider();
-		focusSlider.setPaintTicks(true);
-		focusSlider.setBounds(6, 322, 393, 23);
-		add(focusSlider);
+		
 		
 		JLabel lblAdjustFocus = new JLabel("Adjust Focus");
 		lblAdjustFocus.setFont(new Font("Tahoma", Font.PLAIN, 14));
@@ -164,6 +166,26 @@ private JSlider apertureSlider;
 		btnSetAperture.setBounds(496, 264, 117, 29);
 		add(btnSetAperture);
 		
+		JButton btnNearfast = new JButton();
+		btnNearfast.setIcon(new ImageIcon(getImage("images/media-seek-backward.png")));
+		btnNearfast.setBounds(12, 318, 41, 41);
+		add(btnNearfast);
+		
+		JButton btnNear = new JButton();
+		btnNear.setIcon(new ImageIcon(getImage("images/media-playback-back.png")));
+		btnNear.setBounds(59, 318, 41, 41);
+		add(btnNear);
+		
+		JButton btnFar = new JButton();
+		btnFar.setIcon(new ImageIcon(getImage("images/media-playback-start.png")));
+		btnFar.setBounds(130, 318, 41, 41);
+		add(btnFar);
+		
+		JButton btnFarfast = new JButton();
+		btnFarfast.setIcon(new ImageIcon(getImage("images/media-seek-forward.png")));
+		btnFarfast.setBounds(183, 318, 41, 41);
+		add(btnFarfast);
+		
 		
 		// init stuff
 		//cameraCommand.lensInfo();
@@ -218,5 +240,13 @@ private JSlider apertureSlider;
 	//quick hack for the layout
 	public Dimension getPreferredSize() {
         return new Dimension(640,445);
+	}
+	
+	
+	//helper methods
+	
+	private Image getImage(final String pathAndFileName) {
+	    final URL url = Thread.currentThread().getContextClassLoader().getResource(pathAndFileName);
+	    return Toolkit.getDefaultToolkit().getImage(url);
 	}
 }
