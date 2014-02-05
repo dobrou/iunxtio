@@ -24,6 +24,7 @@ import de.olumix.iunxtio.camera.Camera;
 import de.olumix.iunxtio.camera.Lens;
 import de.olumix.iunxtio.net.LumixNetwork.Actions;
 import de.olumix.iunxtio.net.LumixNetwork.Capabilities;
+import de.olumix.iunxtio.util.LumixUtils.Focus;
 
 /**
  * @author hkremmin
@@ -110,7 +111,7 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 		//example result is: ok,2304/256,434/256,3072/256,0/256,0,off,45,45,on,128/1024
 		//first we will split the string
 		String[] values = result.split( Pattern.quote( "," ) );
-		System.out.println("Lens value count " + values.length);
+		log.info("Lens value count " + values.length);
 		
 		if (values[0].equals("ok")) {
 			//get the value for closed aperture
@@ -149,6 +150,29 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 		
 		
 	}
+	
+	public int setFocus(Focus focus) {
+		int newFocus = -1;
+		String result = null;
+		
+		try {
+			result = camNetwork.setFocus(focus);
+			String[] values = result.split( Pattern.quote( "," ) );
+			// the fist value should always be ok 
+			if (values[0].equals("ok")) {
+				newFocus = Integer.parseInt(values[1]);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			log.info(e.toString());
+		}
+		
+		
+		return newFocus;
+	}
+	
+	
+	//simple getter/setter
 	
 	public Lens getLens() {
 		return lens;

@@ -35,6 +35,8 @@ import org.fourthline.cling.model.message.header.STAllHeader;
 import org.fourthline.cling.model.meta.RemoteDevice;
 import org.fourthline.cling.registry.Registry;
 
+import de.olumix.iunxtio.util.LumixUtils.Focus;
+
 
 
 
@@ -70,6 +72,13 @@ private final String RECMODE = "cam.cgi?mode=camcmd&value=recmode";
 private final String SHUTTERSTART = "cam.cgi?mode=camcmd&value=capture";
 private final String SHUTTERSTOP = "cam.cgi?mode=camcmd&value=capture_cancel";
 private final String SETAPERTURE = "cam.cgi?mode=setsetting&type=focal&value=";
+
+//Focus
+private final String FOCUS = "cam.cgi?mode=camctrl&type=focus&value=";
+private final String NEARFAST = "wide-fast";
+private final String NEAR = "wide-normal";
+private final String FAR = "tele-normal";
+private final String FARFAST = "tele-fast";
 
 
 private final String INCREMENT = "%2F256";
@@ -286,6 +295,34 @@ private LumixNetworkInfo info = null;
 			HTTPResponse resp = null;
 			resp = sendGet(LENSINFO);
 			
+			return resp.getBody();
+		}
+		
+		public String setFocus(Focus focus) throws Exception{
+			HTTPResponse resp = null;
+			String tmp = FOCUS;
+			switch (focus) {
+			case NEARFAST:
+				tmp = tmp + this.NEARFAST;
+				log.info("Focus Nearfast " + tmp);
+				resp = sendGet(tmp);
+				break;
+			case NEAR:
+				tmp = tmp + this.NEAR;
+				log.info("Focus Near" + tmp);
+				resp = sendGet(tmp);
+				break;
+			case FAR:
+				tmp = tmp + this.FAR;
+				log.info("Focus Far" + tmp);
+				resp = sendGet(tmp);
+				break;
+			case FARFAST:
+				tmp = tmp + this.FARFAST;
+				log.info("Focus FastFar" + tmp);
+				resp = sendGet(tmp);
+				break;        
+			}
 			return resp.getBody();
 		}
 		

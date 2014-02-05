@@ -36,6 +36,7 @@ import javax.swing.JSlider;
 import de.olumix.iunxtio.camera.Lens;
 import de.olumix.iunxtio.net.LumixCommand;
 import de.olumix.iunxtio.net.LumixNetworkInfo;
+import de.olumix.iunxtio.util.LumixUtils.Focus;
 
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
@@ -61,6 +62,8 @@ private static Logger log = Logger.getLogger(ControlPanel.class.getName());
 private LumixCommand cameraCommand = null;
 private JLabel apertureLabel;
 private JSlider apertureSlider;
+private JLabel lblfocusValue; 
+private int focusValue = -1;
 
 	/**
 	 * @wbp.parser.constructor
@@ -71,6 +74,7 @@ private JSlider apertureSlider;
 		//handle to cameraCommand object
 		
 		cameraCommand = lm;
+		
 		
 		setBackground(new Color(210, 180, 140));
 		setLayout(null);
@@ -91,11 +95,14 @@ private JSlider apertureSlider;
 		separator.setBounds(12, 359, 426, 12);
 		add(separator);
 		
+		lblfocusValue = new JLabel("focusValue");
+		lblfocusValue.setBounds(255, 331, 130, 16);
+		add(lblfocusValue);
 		
 		
 		JLabel lblAdjustFocus = new JLabel("Adjust Focus");
 		lblAdjustFocus.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblAdjustFocus.setBounds(29, 294, 356, 16);
+		lblAdjustFocus.setBounds(29, 294, 190, 16);
 		add(lblAdjustFocus);
 		
 		JComboBox shutterCombo = new JComboBox();
@@ -167,24 +174,53 @@ private JSlider apertureSlider;
 		add(btnSetAperture);
 		
 		JButton btnNearfast = new JButton();
+		btnNearfast.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				focusValue = cameraCommand.setFocus(Focus.NEARFAST);
+				lblfocusValue.setText(String.valueOf(focusValue));
+			}
+		});
 		btnNearfast.setIcon(new ImageIcon(getImage("images/media-seek-backward.png")));
 		btnNearfast.setBounds(12, 318, 41, 41);
 		add(btnNearfast);
 		
 		JButton btnNear = new JButton();
+		btnNear.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				focusValue = cameraCommand.setFocus(Focus.NEAR);
+				lblfocusValue.setText(String.valueOf(focusValue));
+			}
+		});
 		btnNear.setIcon(new ImageIcon(getImage("images/media-playback-back.png")));
 		btnNear.setBounds(59, 318, 41, 41);
 		add(btnNear);
 		
 		JButton btnFar = new JButton();
+		btnFar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				focusValue = cameraCommand.setFocus(Focus.FAR);
+				lblfocusValue.setText(String.valueOf(focusValue));
+			}
+		});
 		btnFar.setIcon(new ImageIcon(getImage("images/media-playback-start.png")));
 		btnFar.setBounds(130, 318, 41, 41);
 		add(btnFar);
 		
 		JButton btnFarfast = new JButton();
+		btnFarfast.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				focusValue = cameraCommand.setFocus(Focus.FARFAST);
+				lblfocusValue.setText(String.valueOf(focusValue));
+			}
+		});
 		btnFarfast.setIcon(new ImageIcon(getImage("images/media-seek-forward.png")));
 		btnFarfast.setBounds(183, 318, 41, 41);
 		add(btnFarfast);
+		
+		JLabel lblFocusText = new JLabel("Focus Value");
+		lblFocusText.setBounds(255, 295, 130, 16);
+		add(lblFocusText);
+		
 		
 		
 		// init stuff
