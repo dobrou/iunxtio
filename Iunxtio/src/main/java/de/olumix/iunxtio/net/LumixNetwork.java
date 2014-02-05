@@ -27,6 +27,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.UpnpServiceImpl;
@@ -44,6 +45,8 @@ import org.fourthline.cling.registry.Registry;
  */
 
 public class LumixNetwork {
+	
+private static Logger log = Logger.getLogger(LumixNetwork.class.getName());
 	
 private InetAddress cam_ip = null; //the camera ip adress
 private InetAddress local_ip = null; //the local ip adress required for UDP Server
@@ -103,7 +106,7 @@ private LumixNetworkInfo info = null;
 		listener = new LumixRegistryListener(info);
 		
         // This will create necessary network resources for UPnP right away
-        System.out.println("Starting Cling...");
+        log.info("Starting Cling...");
         upnpService = new UpnpServiceImpl(listener);
 
         // Send a search message to all devices and services, they should respond soon
@@ -111,12 +114,12 @@ private LumixNetworkInfo info = null;
         upnpService.getControlPoint().search(new STAllHeader());
 
         // Let's wait 10 seconds for them to respond
-        System.out.println("Waiting 10 seconds before shutting down...");
+        log.info("Waiting 10 seconds before shutting down...");
         try {
 			Thread.sleep(10000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.info(e.toString());
 		}       
 	}
 
@@ -131,13 +134,13 @@ private LumixNetworkInfo info = null;
 		try {
 			local_ip = InetAddress.getLocalHost();
             theSocket = new DatagramSocket(serverPort);
-			System.out.println("Local UDP Socket on IP address " + local_ip.getHostAddress() +" on port " + serverPort + " created");
+			log.info("Local UDP Socket on IP address " + local_ip.getHostAddress() +" on port " + serverPort + " created");
 		} catch (SocketException ExceSocket)
 		{
-			System.out.println("Socket creation error : "+ ExceSocket.getMessage());
+			log.info("Socket creation error : "+ ExceSocket.getMessage());
 		}
                 catch(UnknownHostException e) {
-			System.out.println("Cannot find an ip");
+			log.info("Cannot find an ip");
 		}
 		
 		return local_ip;
@@ -155,8 +158,8 @@ private LumixNetworkInfo info = null;
 		
 		while (!info.isConnected()) {
 			
-			//should do something more inteligent here....
-			System.out.println("-->please connect the Camera!!");
+			//should do something more intelligent here....
+			log.info("-->please connect the Camera!!");
 		}
 		cam_ip = info.getCam_ip();
 		try {
@@ -164,7 +167,7 @@ private LumixNetworkInfo info = null;
 			getState();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.info(e.toString());
 		}
 		return info.getCam_ip().getHostAddress();
 		}
@@ -176,7 +179,7 @@ private LumixNetworkInfo info = null;
 	protected void finalize() throws Throwable {
 	  try {
 		  	// Release all resources and advertise BYEBYE to other UPnP devices
-	        System.out.println("Stopping Cling...");
+	        log.info("Stopping Cling...");
 	        if (upnpService != null) {
 	        	upnpService.shutdown();
 	        }
@@ -193,7 +196,7 @@ private LumixNetworkInfo info = null;
 	 
 			//Construct the requeststring for the cmd and create an URL object
 			String request = "http:/" + cam_ip.toString() + "/" + cmd;
-			System.out.println("###########Url request = " + request);
+			log.info("###########Url request = " + request);
 			
 			URL url = new URL(request);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -205,8 +208,8 @@ private LumixNetworkInfo info = null;
 			con.setRequestProperty("User-Agent", USER_AGENT);
 	 
 			int responseCode = con.getResponseCode();
-			System.out.println("\nSending 'GET' request to URL : " + url);
-			System.out.println("Response Code : " + responseCode);
+			log.info("\nSending 'GET' request to URL : " + url);
+			log.info("Response Code : " + responseCode);
 	 
 			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 			String inputLine;
@@ -218,7 +221,7 @@ private LumixNetworkInfo info = null;
 			in.close();
 	 
 			//print result
-			System.out.println(response.toString());
+			log.info(response.toString());
 			
 			return new HTTPResponse(con.getResponseCode(), response.toString());
 	 
@@ -294,11 +297,11 @@ private LumixNetworkInfo info = null;
 			
 			switch (action) {
 				case SINGLESHOT:
-					System.out.println("Single Shot");
+					log.info("Single Shot");
 					ok = doSingleShot();
 					break;
 				case APERTURE:
-					System.out.println("Aperture");
+					log.info("Aperture");
 					ok = setAperture(value);
 					break;
 				case SHUTTER:
@@ -320,11 +323,11 @@ private LumixNetworkInfo info = null;
 			
 			switch (capa) {
 			case LENS:
-				System.out.println("Getting Lens informatiom");
+				log.info("Getting Lens informatiom");
 				results = getLensInfo();
 				break;
 			case CAMERA:
-				System.out.println("Aperture");
+				log.info("Aperture");
 				break;
 			
 			}

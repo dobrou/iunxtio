@@ -18,6 +18,7 @@
 package de.olumix.iunxtio.net;
 
 import java.net.InetAddress;
+import java.util.logging.Logger;
 
 /**
  * @author imac
@@ -25,6 +26,8 @@ import java.net.InetAddress;
  */
 
 public class LumixNetworkInfo {
+	
+private static Logger log = Logger.getLogger(LumixNetworkInfo.class.getName());
 
 private String model = null;
 private String modelNumber = null;
@@ -78,7 +81,9 @@ private boolean connected = false;
 		cam_ip = null;
 		model = null;
 		modelNumber = null;
-		connected = false;		
+		connected = false;	
+		
+		log.info("### disconnected");
 	}
 	
 	private InetAddress cam_ip = null; //the camera ip adress

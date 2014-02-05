@@ -17,6 +17,8 @@
  */
 package de.olumix.iunxtio.net;
 
+import java.util.logging.Logger;
+
 /**
  * @author hkremmin
  *
@@ -26,6 +28,8 @@ public class HTTPResponse {
 private int responseCode = -1;
 private String message = null; //the HTTP response Message
 private String body = null; // only the body of the HTTP message with removed HTML header elements
+
+private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 
 	/**
 	 * 
@@ -40,8 +44,13 @@ private String body = null; // only the body of the HTTP message with removed HT
 	}
 	
 	public boolean isOK() {
-		if (responseCode == 200) return true; else return false;
+		if (responseCode == 200) {
+			return true; 
+		} else 
+			log.info("---> response code = " + responseCode);
+			return false;
 	}
+	
 	
 	public String getBody() {
 		return message;

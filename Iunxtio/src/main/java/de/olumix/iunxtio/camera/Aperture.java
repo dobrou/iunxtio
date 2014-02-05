@@ -19,11 +19,16 @@ package de.olumix.iunxtio.camera;
 
 import java.math.*;
 import java.text.DecimalFormat;
+import java.util.logging.Logger;
+
+import de.olumix.iunxtio.gui.ControlPanel;
 /**
  * @author hkremmin
  *
  */
 public class Aperture {
+	
+private static Logger log = Logger.getLogger(Aperture.class.getName());
 	
 private int lumixValue = 0;
 private int increment = 0;

@@ -33,18 +33,26 @@ import javax.swing.JSlider;
 
 import de.olumix.iunxtio.camera.Lens;
 import de.olumix.iunxtio.net.LumixCommand;
+import de.olumix.iunxtio.net.LumixNetworkInfo;
+
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
+import java.util.logging.Logger;
 
 /**
  * @author hkremmin
  *
  */
 public class ControlPanel extends JPanel {
+	
+
+private static final long serialVersionUID = -6531131110490528420L;
+
+private static Logger log = Logger.getLogger(ControlPanel.class.getName());
 	
 private LumixCommand cameraCommand = null;
 private JLabel apertureLabel;
@@ -176,6 +184,8 @@ private JSlider apertureSlider;
 		Lens lens = cameraCommand.getLens();
 		apertureSlider.setMinimum(lens.getMaxAperture());
 		apertureSlider.setMaximum(lens.getMinAperture());
+		
+		log.info("### Slider adjusted");
 		
 	}
 	

@@ -17,6 +17,10 @@
  */
 package de.olumix.iunxtio.camera;
 
+import java.util.logging.Logger;
+
+import de.olumix.iunxtio.gui.ControlPanel;
+
 /**
  * @author hkremmin
  * This class encapsulates all the features of a camera.
@@ -24,6 +28,8 @@ package de.olumix.iunxtio.camera;
  */
 
 public class Camera {
+	
+private static Logger log = Logger.getLogger(Camera.class.getName());
 	
 	public void Camera() {
 		//todo init the camera

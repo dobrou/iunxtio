@@ -29,6 +29,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
@@ -37,20 +38,22 @@ import de.olumix.iunxtio.net.LumixNetwork;
 
 public class LiveViewPanel extends JPanel {
 
-	private static final long serialVersionUID = 6146175487416454007L;
-	
-	//networking stuff - todo: move all to LumixNetwork class
-	private LumixNetwork camNetwork;
-	DatagramSocket liveViewSocket = null;
-	int serverPort = 49199;
-        private InetAddress myip;
-        
-    BufferedImage image;
-    BufferedImage bufferedImage = null;
+private static final long serialVersionUID = 6146175487416454007L;
+
+private static Logger log = Logger.getLogger(LiveViewPanel.class.getName());
+
+//networking stuff - todo: move all to LumixNetwork class
+private LumixNetwork camNetwork;
+private DatagramSocket liveViewSocket = null;
+private final int serverPort = 49199;
+private InetAddress myip;
     
-    Component parent;
-    //we need threading to update the images
-    Thread liveThread = null;
+private BufferedImage image;
+private BufferedImage bufferedImage = null;
+
+private Component parent;
+//we need threading to update the images
+Thread liveThread = null;
     
     
     
@@ -59,22 +62,19 @@ public class LiveViewPanel extends JPanel {
 		
 		this.camNetwork = ln;
 		this.parent = _parent;
-		
-		
-			
-			
+	
 		try {
 			myip = InetAddress.getLocalHost();
             liveViewSocket = new DatagramSocket(serverPort);
             liveViewSocket.setSoTimeout(1000);
-			System.out.println("************* UDP Socket on IP address " + myip.getHostAddress() +" on port " + serverPort + " created");
+			log.info("************* UDP Socket on IP address " + myip.getHostAddress() +" on port " + serverPort + " created");
 			//enableLiveView();
 		} catch (SocketException ExceSocket)
 		{
-			System.out.println("************* Socket creation error : "+ ExceSocket.getMessage());
+			log.info("************* Socket creation error : "+ ExceSocket.getMessage());
 		}
                 catch(UnknownHostException e) {
-			System.out.println("************* Cannot find myip");
+			log.info("************* Cannot find myip");
 		}
 		
 		liveThread = new Thread() {
@@ -113,7 +113,7 @@ public class LiveViewPanel extends JPanel {
 
 		inBuffer = new byte[30000];
 
-		System.out.println("************* Starting Live View");
+		log.info("************* Starting Live View");
 		
 		try {
 			camNetwork.enableRecMode();
@@ -121,6 +121,7 @@ public class LiveViewPanel extends JPanel {
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+			log.info(e1.toString());
 		}
 		
 		boolean loop = true;
@@ -150,14 +151,14 @@ public class LiveViewPanel extends JPanel {
 				//parent.validate();
 			}  
 			catch (SocketTimeoutException ste) {
-				System.out.print("*" + timeouts);
+				log.info("*" + timeouts);
 				timeouts++;
 				//System.out.println("Error with client request : "+ste.getMessage() + " " + timeouts);
 				//if (timeouts > 20) loop=false;
 			}
 			catch (Exception e) {
-				System.out.print("*");
-				System.out.println("Error with client request : "+e.getMessage());
+				
+				log.info("Error with client request : "+e.getMessage());
 				loop=false;
 			}
 		}

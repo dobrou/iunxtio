@@ -17,6 +17,7 @@
  */
 package de.olumix.iunxtio.net;
 
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import de.olumix.iunxtio.camera.Camera;
@@ -36,6 +37,8 @@ public class LumixCommand {
 private LumixNetwork camNetwork = null; //this class encapsulates basic network handling
 private Camera camera = null; //camera object which stores all capabilities of the camera
 private Lens lens = null; //lens object which stores all capabilities of the attached lens
+
+private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 
 
 
@@ -67,7 +70,8 @@ private Lens lens = null; //lens object which stores all capabilities of the att
 			ok = camNetwork.executeAction(Actions.SINGLESHOT, 0);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.info(e.toString());
+			;
 		}
 		
 		return true;
@@ -81,10 +85,10 @@ private Lens lens = null; //lens object which stores all capabilities of the att
 			ok = camNetwork.executeAction(Actions.APERTURE, value);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.info(e.toString());
 		}
 		
-		return true;
+		return ok;
 	}
 	
 	public void lensInfo(){
@@ -99,7 +103,7 @@ private Lens lens = null; //lens object which stores all capabilities of the att
 			result = camNetwork.getCapabilities(Capabilities.LENS);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.info(e.toString());
 		}
 		
 		//now parsing the result string
@@ -136,11 +140,11 @@ private Lens lens = null; //lens object which stores all capabilities of the att
 			
 			//values[10] = ???????
 			lens.init(minAperture, maxAperture, minFocal, maxFocal, isPower, isNative);
-			System.out.println("Lens Info = " + lens.toString());
+			log.info("Lens Info = " + lens.toString());
 			
 			
 		} else {
-			System.out.println("Can't read lens information!!!!!");
+			log.info("Can't read lens information!!!!!");
 		}
 		
 		

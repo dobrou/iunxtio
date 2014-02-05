@@ -17,10 +17,16 @@
  */
 package de.olumix.iunxtio.camera;
 
+import java.util.logging.Logger;
+
+import de.olumix.iunxtio.gui.ControlPanel;
+
 /**
  * @author imac
  *
  */
 public class Shutter {
+	
+	private static Logger log = Logger.getLogger(Shutter.class.getName());
 
 }

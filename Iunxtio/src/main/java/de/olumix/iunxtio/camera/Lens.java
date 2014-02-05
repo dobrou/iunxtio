@@ -17,11 +17,17 @@
  */
 package de.olumix.iunxtio.camera;
 
+import java.util.logging.Logger;
+
+import de.olumix.iunxtio.gui.ControlPanel;
+
 /**
  * @author hkremmin
  *
  */
 public class Lens {
+	
+private static Logger log = Logger.getLogger(Lens.class.getName());
 	
 //object state
 private boolean initialized = false;
@@ -68,12 +74,8 @@ private int increment = 256; //have to divide the aperture values to calculate a
 	public String getAperture(int value) {
 		double d, lv;
 		
-		System.out.println("value =  "+ value);
-		
 		d =  value/ (double) increment;
-		System.out.println("d =  "+ d);
 		lv = Math.sqrt(Math.pow(2, d));
-		System.out.println("lv = " + lv);
 		return String.format("%.1f", lv); 
 		
 	}

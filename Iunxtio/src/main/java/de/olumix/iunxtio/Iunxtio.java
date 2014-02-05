@@ -8,7 +8,8 @@ import javax.swing.SwingUtilities;
 import de.olumix.iunxtio.gui.*;
 
 
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author imac
@@ -18,20 +19,25 @@ public class Iunxtio {
 	
 //member variables
 	
+	public Iunxtio() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
 private static Mainframe mainframe;  //main window frame
+private static Logger log = Logger.getLogger(Iunxtio.class.getName());
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		
+		log.info("### Starting Iunxtio ... ");
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				startApp();
 			}
 		});
-		
-		//startApp();
 	}
 	
 	public static void startApp() {
@@ -46,9 +52,6 @@ private static Mainframe mainframe;  //main window frame
 		                    //todo  we should clean up here
 		                }
 		            });
-		        //imagePanel.add(theServer );
-		        //frame.add(imagePanel);
-		        //frame.pack();
 		        mainframe.setSize(1024, 768);
 		        mainframe.pack();
 		        mainframe.setVisible(true);

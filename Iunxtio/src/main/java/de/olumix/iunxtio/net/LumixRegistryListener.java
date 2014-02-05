@@ -19,6 +19,7 @@ package de.olumix.iunxtio.net;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.logging.Logger;
 
 import org.fourthline.cling.model.meta.DeviceDetails;
 import org.fourthline.cling.model.meta.LocalDevice;
@@ -35,6 +36,8 @@ import org.fourthline.cling.registry.RegistryListener;
  */
 public class LumixRegistryListener implements RegistryListener {
 
+private static Logger log = Logger.getLogger(LumixNetworkInfo.class.getName());
+	
 private final String MODEL = "LUMIX";
 private LumixNetworkInfo info = null; //this class is used to store the ip of the lumix etc.	
 	
@@ -46,7 +49,7 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 
 	public void remoteDeviceDiscoveryStarted(Registry registry,
 			RemoteDevice device) {
-		System.out.println(
+		log.info(
 				"Discovery started: " + device.getDisplayString()
 				);
 	}
@@ -54,7 +57,7 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 	public void remoteDeviceDiscoveryFailed(Registry registry,
 			RemoteDevice device,
 			Exception ex) {
-		System.out.println(
+		log.info(
 				"Discovery failed: " + device.getDisplayString() + " => " + ex
 				);
 	}
@@ -68,21 +71,21 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 		UDN udn = null;
 		
 		//debug stuff ...
-		System.out.println(
+		log.info(
 				"Remote device available: " + mod.getModelName() + " with Number " + mod.getModelNumber() + " and description " + mod.getModelDescription()
 				);
-		System.out.println(
+		log.info(
 				"ManufacturerURL: " + md.getManufacturerURI()
 				);
-		System.out.println(
+		log.info(
 				"UPC: " + dd.getUpc() + "PresentationURI " + dd.getPresentationURI() + "Base URL " + dd.getBaseURL()
 				);
 		
-		System.out.println(
+		log.info(
 				"UDN: " + device.getIdentity().getUdn().toString()
 				);
 		
-		System.out.println(
+		log.info(
 				"IP: " + device.getIdentity().getDescriptorURL().getHost()
 				);
 		// -------------------
@@ -99,7 +102,7 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 			modelNumber= device.getDetails().getModelDetails().getModelNumber();
 			
 			if (model.equals(MODEL)) {
-				System.out.println(
+				log.info(
 						"-->Found camera: " + model + " " + modelNumber
 						);
 				ip = device.getIdentity().getDescriptorURL().getHost();
@@ -114,14 +117,15 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 					info.setConnected(true);
 				} catch (UnknownHostException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					log.info(e.toString());
+					
 				}
 				
 				
 				
 				
 			} else {
-				System.out.println(
+				log.info(
 						"Found something else: " + model + " " + modelNumber 
 						);
 				
@@ -131,13 +135,13 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 
 	
 	public void remoteDeviceUpdated(Registry registry, RemoteDevice device) {
-		System.out.println(
+		log.info(
 				"Remote device updated: " + device.getDisplayString()
 				);
 	}
 
 	public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
-		System.out.println(
+		log.info(
 				"Remote device removed: " + device.getDisplayString()
 				);
 	}
@@ -145,27 +149,27 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 	
 	public void localDeviceAdded(Registry registry, LocalDevice device) {
 		//normally we should not care about any local devices
-		System.out.println(
+		log.info(
 				"Local device added: " + device.getDisplayString()
 				);
 	}
 
 	public void localDeviceRemoved(Registry registry, LocalDevice device) {
 		//normally we should not care about any local devices
-		System.out.println(
+		log.info(
 				"Local device removed: " + device.getDisplayString()
 				);
 	}
 
 	public void beforeShutdown(Registry registry) {
-		System.out.println(
+		log.info(
 				"Before shutdown, the registry has devices: "
 						+ registry.getDevices().size()
 				);
 	}
 
 	public void afterShutdown() {
-		System.out.println("Shutdown of registry complete!");
+		log.info("Shutdown of registry complete!");
 
 	}
 

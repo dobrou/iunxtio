@@ -17,33 +17,29 @@
  */
 package de.olumix.iunxtio.gui;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.logging.Logger;
+
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+
 import de.olumix.iunxtio.camera.Camera;
 import de.olumix.iunxtio.camera.Lens;
 import de.olumix.iunxtio.net.LumixCommand;
 import de.olumix.iunxtio.net.LumixNetwork;
 
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.BoxLayout;
-import javax.swing.JLabel;
-import javax.swing.JProgressBar;
-import javax.swing.SwingUtilities;
-
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import javax.swing.JPanel;
-import javax.swing.JMenuBar;
-import java.awt.Color;
-import java.awt.GridLayout;
-import javax.swing.JMenu;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import java.util.concurrent.TimeUnit;
-import javax.swing.JMenuItem;
-
 public class Mainframe extends JFrame {
 	
+private static Logger log = Logger.getLogger(Mainframe.class.getName());
 private final static String windowTitle = "IUNXTIO Lumix App";
 
 //members
@@ -137,17 +133,17 @@ private LiveViewPanel liveView = null;
 		String ip = null;
 		
 
-		System.out.println("Trying to find the camera...");
+		log.info("Trying to find the camera...");
 			try {
 				
 				ip = camNetwork.lookUpLumixIp();
 				if (ip != null) {
-					System.out.println("--->Camera identified @IP: " + ip);
+					log.info("--->Camera identified @IP: " + ip);
 				} else {
-					System.out.println("##### No Camera identified in the network!!!!!");
+					log.info("##### No Camera identified in the network!!!!!");
 				}
 				
-				System.out.println("Trying to establish Live View...");
+				log.info("Trying to establish Live View...");
 				//sending the start stream command - todo move to liveview panel
 				camNetwork.getState();
 				
@@ -155,7 +151,7 @@ private LiveViewPanel liveView = null;
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
-				System.out.println("nix ... gefunden....");
+				log.info("camera is not available?....");
 				e.printStackTrace();
 			}
 
