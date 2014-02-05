@@ -48,6 +48,16 @@ Copyright 2014 Dr. Holger Kremmin
   
   
   <build>
+    
+  	<resources>
+            <resource>
+                <directory>${basedir}/src/resources</directory>
+                <includes>
+                    <include>images/**</include>
+                </includes>
+            </resource>
+        </resources>
+  
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
