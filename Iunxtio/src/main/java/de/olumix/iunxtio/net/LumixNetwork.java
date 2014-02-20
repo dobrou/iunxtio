@@ -17,17 +17,24 @@
  */
 package de.olumix.iunxtio.net;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Logger;
+
+import javax.imageio.ImageIO;
 
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.UpnpServiceImpl;
@@ -88,15 +95,27 @@ public enum Actions {SINGLESHOT, APERTURE, SHUTTER, FOCUS, ZOOM}
 public enum Capabilities {LENS, CAMERA}
 
 
-private final int serverPort = 49199; //Port for live view images
+
 
 
 //Cling
 private LumixRegistryListener listener = null;
 private UpnpService upnpService = null;
-private DatagramSocket theSocket;
+
 private LumixNetworkInfo info = null;
 
+private Thread lookupThread = null;
+
+//Image retrieval 
+
+private BufferedImage bufferedImage = null;
+private DatagramSocket liveViewSocket = null;
+private final int serverPort = 49199; //Port for live view images
+
+private DatagramPacket theRecievedPacket;
+private byte[] outBuffer;
+private byte[] inBuffer = new byte[30000];
+private int timeouts=0;  //for handling of timeouts
 
 
 //---------------------------------------------------------
@@ -125,13 +144,47 @@ private LumixNetworkInfo info = null;
         // Let's wait 10 seconds for them to respond
         log.info("Waiting 10 seconds before shutting down...");
         try {
-			Thread.sleep(10000);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			log.info(e.toString());
-		}       
+		}   
+        
+        //now staring the Lumix lookup thread, I don't want to stop the GUI init
+        lookupThread = new Thread() {
+			public void run() {
+				try {
+					lookUpLumixIp();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					log.info("starting the lookup thread failed!!!");
+					log.info (e.toString());
+				}
+			};
+		};	
+		
+		lookupThread.start();
 	}
 
+	
+	
+	/**
+	 * returns whether the camera is connected or not
+	 * @return connection
+	 */
+	
+	public boolean isConnected() {
+		return info.isConnected();
+	}
+	
+	
+	/**
+	 * Just for displaying an info line
+	 * @return the textual representation of the camera info
+	 */
+	public String getCameraInfoString() {
+		return info.toString();
+	}
 	
 	/**
 	 * Lookup of the local IP adress. This adress is required to init the UDP Server
@@ -140,17 +193,14 @@ private LumixNetworkInfo info = null;
 	public InetAddress lookUpLocalIp () {
 		
 		local_ip = null;
-		try {
-			local_ip = InetAddress.getLocalHost();
-            theSocket = new DatagramSocket(serverPort);
-			log.info("Local UDP Socket on IP address " + local_ip.getHostAddress() +" on port " + serverPort + " created");
-		} catch (SocketException ExceSocket)
-		{
-			log.info("Socket creation error : "+ ExceSocket.getMessage());
-		}
-                catch(UnknownHostException e) {
-			log.info("Cannot find an ip");
-		}
+		
+			try {
+				local_ip = InetAddress.getLocalHost();
+			} catch (UnknownHostException e) {
+				// TODO Auto-generated catch block
+				log.info("Can't retrieve local ip adress!");
+			}
+            
 		
 		return local_ip;
 		
@@ -168,7 +218,8 @@ private LumixNetworkInfo info = null;
 		while (!info.isConnected()) {
 			
 			//should do something more intelligent here....
-			log.info("-->please connect the Camera!!");
+			//log.info("-->please connect the Camera!!");
+			//System.out.print(".");
 		}
 		cam_ip = info.getCam_ip();
 		try {
@@ -198,43 +249,143 @@ private LumixNetworkInfo info = null;
 	  }
 	}
 
+//UDP, Image retrieval etc.
+	
+	
+	
+	/**
+	 * This method is used to create the UDP socket for live view
+	 * @return
+	 */
+	public boolean prepareLiveView() {
+		
+		boolean socketCreated = false;
+		
+		try {
+			
+	        liveViewSocket = new DatagramSocket(serverPort);
+	        liveViewSocket.setSoTimeout(2000);
+	        theRecievedPacket = new DatagramPacket(inBuffer, inBuffer.length, lookUpLocalIp (), serverPort);
+			log.info("************* UDP Socket on IP address " + lookUpLocalIp () +" on port " + serverPort + " created");
+			socketCreated = true;
+		} catch (SocketException se)
+		{
+			log.info("************* Socket creation error : "+ se.getMessage());
+		}
+		
+		return socketCreated;
+	}
+	
+	/**
+	 * In case we get to many socket timeouts the socket connection is not recovering.
+	 * As a workaround the socket will be closed and opened again.
+	 */
+	private void socketReconnect() {
+		
+        try {
+        	liveViewSocket.disconnect();
+    		liveViewSocket.close();
+    		
+    		Thread.sleep(1000);
+    		
+    		liveViewSocket = new DatagramSocket(serverPort);
+			liveViewSocket.setSoTimeout(2000);
+			enableRecMode();
+			log.info("Socket recreated due to massive timeouts");
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			log.info(e.toString());
+		}
+        catch (Exception e) {
+			// TODO Auto-generated catch block
+			log.info(e.toString());
+		}
+		
+	}
+	
+	public BufferedImage getImageStream() throws Exception {
+
+		int offset=132;
+		
+
+		
+
+		try {   
+			liveViewSocket.receive(theRecievedPacket);
+			outBuffer = theRecievedPacket.getData();
+
+			for (int i = 130; i < 320; i += 1){
+				if (outBuffer[i]==-1 && outBuffer[i+1]==-40){
+					offset = i; 
+				}
+			}
+			byte [] newBuffer = Arrays.copyOfRange( outBuffer, offset, theRecievedPacket.getLength() );
+			bufferedImage = ImageIO.read( new ByteArrayInputStream( newBuffer ) );
+			
+		}  
+		catch (SocketTimeoutException ste) {	
+			timeouts++;
+			if ((timeouts % 10) == 0) {
+				socketReconnect();
+				log.info("to many timeouts, reset the connection..." + timeouts);
+			}
+			throw ste;
+			
+		}
+		catch (Exception e) {
+			log.info("Error with client request : "+e.getMessage());
+		}
+		return bufferedImage;
+	}
+	
+	
+	
 //------------------- HTTP Networking ---------------------
 	
 	// HTTP GET request
-		private HTTPResponse sendGet(String cmd) throws Exception {
-	 
-			//Construct the requeststring for the cmd and create an URL object
-			String request = "http:/" + cam_ip.toString() + "/" + cmd;
-			log.info("###########Url request = " + request);
-			
+	private HTTPResponse sendGet(String cmd) throws Exception {
+		
+		HTTPResponse resp = null;
+
+		//Construct the requeststring for the cmd and create an URL object
+		String request = "http:/" + cam_ip.toString() + "/" + cmd;
+		log.info("###########Url request = " + request);
+		try {
 			URL url = new URL(request);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-	 
+			con.setConnectTimeout(2000);
+
 			// we will send a GET
 			con.setRequestMethod("GET");
-	 
+
 			//add request header
 			con.setRequestProperty("User-Agent", USER_AGENT);
-	 
+
 			int responseCode = con.getResponseCode();
 			log.info("\nSending 'GET' request to URL : " + url);
 			log.info("Response Code : " + responseCode);
-	 
+
 			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 			String inputLine;
 			StringBuffer response = new StringBuffer();
-	 
+
 			while ((inputLine = in.readLine()) != null) {
 				response.append(inputLine);
 			}
 			in.close();
-	 
+			
+			resp = new HTTPResponse(con.getResponseCode(), response.toString());
+
 			//print result
 			log.info(response.toString());
-			
-			return new HTTPResponse(con.getResponseCode(), response.toString());
-	 
+		} catch (Exception e) {
+			log.info(e.toString());
+
 		}
+
+		return resp;
+
+	}
 		
 		public void startStream() throws Exception {
 			 
@@ -284,7 +435,7 @@ private LumixNetworkInfo info = null;
 			
 			//perfom shot
 			resp = sendGet(tmp);
-			//if ok we will send immediatly send an stop shutter
+			//if ok we will send immediately send an stop shutter
 			
 			
 			return resp.isOK();

@@ -37,6 +37,7 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 	public HTTPResponse(int code, String m) {
 		responseCode = code;
 		message = m;
+		log.info("HTML_Body: ");
 	}
 	
 	public int getReturnCode() {

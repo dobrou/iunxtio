@@ -39,11 +39,14 @@ import de.olumix.iunxtio.net.LumixNetwork;
 
 public class Mainframe extends JFrame {
 	
+
+private static final long serialVersionUID = -1390195893494380883L;
+
 private static Logger log = Logger.getLogger(Mainframe.class.getName());
 private final static String windowTitle = "IUNXTIO Lumix App";
 
 //members
-private JDialog conDialog;
+
 private LumixNetwork camNetwork;
 private LumixCommand camCommand;
 private Lens lens;
@@ -51,6 +54,9 @@ private Camera camera;
 
 //need control over this panel
 private LiveViewPanel liveView = null;
+private ControlPanel cameraControl = null;
+
+JLabel infoLine = null;
 
 
 	/**
@@ -59,12 +65,8 @@ private LiveViewPanel liveView = null;
 	public Mainframe() {
 		super(windowTitle);
 		
-		//init network class to handle connection to Lumix
-		camNetwork = new LumixNetwork();
-		//init the camCommand, cam & lens objects
-		lens = new Lens();
-		camera = new Camera();
-		camCommand = new LumixCommand(camNetwork, camera, lens);
+		//init all objects we need
+		initCommunication();
 		
 		//----------- init Gui ------------------------------------------------
 		getContentPane().setLayout(new BorderLayout(0, 0));
@@ -75,6 +77,7 @@ private LiveViewPanel liveView = null;
 		JMenu menuStart = new JMenu("Start");
 		menuBar.add(menuStart);
 		
+		/*
 		JMenuItem menuItemConnect = new JMenuItem("Connect");
 		menuItemConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -84,6 +87,8 @@ private LiveViewPanel liveView = null;
 			}
 		});
 		
+		*/
+		
 		JMenuItem menuItemExit = new JMenuItem("Exit");
 		menuItemExit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -92,7 +97,8 @@ private LiveViewPanel liveView = null;
 			}
 		});
 		
-		menuStart.add(menuItemConnect);
+		// menuStart.add(menuItemConnect);
+		
 		menuStart.add(menuItemExit);
 		
 		liveView = new LiveViewPanel(this, camNetwork);
@@ -101,11 +107,11 @@ private LiveViewPanel liveView = null;
 		getContentPane().add(liveView, BorderLayout.LINE_START);
 		liveView.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
-		ControlPanel cameraControl = new ControlPanel(camCommand);
+		cameraControl = new ControlPanel(camCommand);
 		cameraControl.setBackground(Color.GRAY);
 		getContentPane().add(cameraControl, BorderLayout.LINE_END);
 		
-		JLabel infoLine = new JLabel();
+		infoLine = new JLabel();
 		infoLine.setText("Connected Camera: ");
 		infoLine.setBackground(Color.ORANGE);
 		getContentPane().add(infoLine, BorderLayout.PAGE_END);
@@ -113,41 +119,41 @@ private LiveViewPanel liveView = null;
 		
 		pack();
 		
-		initComponents();
+		//a first time setup seems to be required to set the camera into a defined remote state
+		initCamera();
 
 	}
 	
-	private void initComponents() {
-		/*
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run(){
-				connectCamera();
-			}
-		}); */
+	private void initCommunication() {
+		
+		log.info("Init the network communication");
+		//init network class to handle connection to Lumix
+		camNetwork = new LumixNetwork();
+		//init the camCommand, cam & lens objects
+		lens = new Lens();
+		camera = new Camera();
+		camCommand = new LumixCommand(camNetwork, camera, lens);
 		
 	}
 	
-	private void connectCamera() {
+	
+	private void initCamera() {
 		
-		String ip = null;
+		log.info("Initialize the camera for remote usage ");
+			
 		
-
-		log.info("Trying to find the camera...");
-			try {
-				
-				ip = camNetwork.lookUpLumixIp();
-				if (ip != null) {
-					log.info("--->Camera identified @IP: " + ip);
-				} else {
-					log.info("##### No Camera identified in the network!!!!!");
-				}
-				
-				log.info("Trying to establish Live View...");
+		while (!camNetwork.isConnected()) {
+			//just wait until we are connected
+			//todo display a sand watch or so ...
+		}
+		
+		try {
+				log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Trying to establish Live View...");
 				//sending the start stream command - todo move to liveview panel
 				camNetwork.getState();
-				
 				liveView.enableLiveView();
+				infoLine.setText(camNetwork.getCameraInfoString());
+				cameraControl.updateLensInfo();
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block

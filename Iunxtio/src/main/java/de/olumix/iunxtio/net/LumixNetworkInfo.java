@@ -32,6 +32,7 @@ private static Logger log = Logger.getLogger(LumixNetworkInfo.class.getName());
 private String model = null;
 private String modelNumber = null;
 private boolean connected = false;
+private InetAddress cam_ip = null; //the camera ip adress
 
 	LumixNetworkInfo(InetAddress ip, String _model, String _modelNumber) {
 		cam_ip = ip;
@@ -44,6 +45,10 @@ private boolean connected = false;
 	
 	LumixNetworkInfo() {
 		
+	}
+	
+	public String toString() {
+		return ("Camera " + model + " " + modelNumber + " @ IP: " + cam_ip.getHostAddress());
 	}
 
 	/**
@@ -86,7 +91,7 @@ private boolean connected = false;
 		log.info("### disconnected");
 	}
 	
-	private InetAddress cam_ip = null; //the camera ip adress
+	
 	/**
 	 * @param cam_ip the cam_ip to set
 	 */

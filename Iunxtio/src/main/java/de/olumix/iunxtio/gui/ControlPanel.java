@@ -157,8 +157,7 @@ private int focusValue = -1;
 		JButton btnGetLensInfo = new JButton("Get lens Info");
 		btnGetLensInfo.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				cameraCommand.lensInfo();
-				adjustApertureSlider();
+				updateLensInfo();
 			}
 		});
 		btnGetLensInfo.setBounds(12, 6, 117, 29);
@@ -227,6 +226,12 @@ private int focusValue = -1;
 		//cameraCommand.lensInfo();
 		//adjustApertureSlider();
 	}
+	
+	public void updateLensInfo() {
+		cameraCommand.lensInfo();
+		adjustApertureSlider();
+	}
+	
 	
 	private void updateSliderLabel(int value) {
 		Lens lens = cameraCommand.getLens();

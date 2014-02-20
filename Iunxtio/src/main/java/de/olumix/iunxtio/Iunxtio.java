@@ -43,18 +43,18 @@ private static Logger log = Logger.getLogger(Iunxtio.class.getName());
 	public static void startApp() {
 		
 		// initialize the window
-				mainframe = new Mainframe();
-				
-		        //Release the resource window handle as we close the frame
-		        mainframe.addWindowListener(new WindowAdapter(){
-		                public void windowClosing(WindowEvent e) {
-		                    System.exit(0);
-		                    //todo  we should clean up here
-		                }
-		            });
-		        mainframe.setSize(1024, 768);
-		        mainframe.pack();
-		        mainframe.setVisible(true);
+		mainframe = new Mainframe();
+		
+        //Release the resource window handle as we close the frame
+        mainframe.addWindowListener(new WindowAdapter(){
+                public void windowClosing(WindowEvent e) {
+                    System.exit(0);
+                    //todo  we should clean up here
+                }
+            });
+        mainframe.setSize(1024, 768);
+        mainframe.pack();
+        mainframe.setVisible(true);
 	}
 
 }

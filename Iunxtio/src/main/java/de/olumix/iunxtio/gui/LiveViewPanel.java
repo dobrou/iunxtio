@@ -48,7 +48,7 @@ private DatagramSocket liveViewSocket = null;
 private final int serverPort = 49199;
 private InetAddress myip;
     
-private BufferedImage image;
+
 private BufferedImage bufferedImage = null;
 
 private Component parent;
@@ -62,7 +62,7 @@ Thread liveThread = null;
 		
 		this.camNetwork = ln;
 		this.parent = _parent;
-	
+	/*
 		try {
 			myip = InetAddress.getLocalHost();
             liveViewSocket = new DatagramSocket(serverPort);
@@ -76,6 +76,7 @@ Thread liveThread = null;
                 catch(UnknownHostException e) {
 			log.info("************* Cannot find myip");
 		}
+		*/
 		
 		liveThread = new Thread() {
 			public void run() {
@@ -103,19 +104,9 @@ Thread liveThread = null;
         
 	public void startLiveView() {
 		
-		
-		DatagramPacket theRecievedPacket;
-		byte[] outBuffer;
-		byte[] inBuffer; 
-
-		int offset=132;
-		int timeouts=0;
-
-		inBuffer = new byte[30000];
-
-		log.info("************* Starting Live View");
-		
+		//ensure that everything is ready for live stream
 		try {
+			camNetwork.prepareLiveView();
 			camNetwork.enableRecMode();
 			camNetwork.startStream();
 		} catch (Exception e1) {
@@ -124,44 +115,27 @@ Thread liveThread = null;
 			log.info(e1.toString());
 		}
 		
+		int timeouts=0;
 		boolean loop = true;
-		while( loop )
-		{
-			try {   
-
-				theRecievedPacket = new DatagramPacket(inBuffer, inBuffer.length, myip, serverPort);				
-				liveViewSocket.receive(theRecievedPacket);
-				outBuffer = theRecievedPacket.getData();
-
-				for (int i = 130; i < 320; i += 1){
-					if (outBuffer[i]==-1 && outBuffer[i+1]==-40){
-						offset = i; 
-					}
-				}
-
-				byte [] newBuffer = Arrays.copyOfRange( outBuffer, offset, theRecievedPacket.getLength() );
-
-				bufferedImage = ImageIO.read( new ByteArrayInputStream( newBuffer ) );
-				//invalidate();
-				this.repaint();
-				//parent.repaint();
-				
-				
-				Thread.sleep(20); // sleep for 20 milliseconds
-				//parent.validate();
-			}  
-			catch (SocketTimeoutException ste) {
-				log.info("*" + timeouts);
+		
+		while( loop ) {
+			
+			try {
+				//bufferedImage = camNetwork.getImageStream();
+				Thread.sleep(33); // expecting a frame rate around 25 fps so we can wait a little bit here for next frame
+			} catch (Exception e) {
 				timeouts++;
-				//System.out.println("Error with client request : "+ste.getMessage() + " " + timeouts);
-				//if (timeouts > 20) loop=false;
+				if ((timeouts % 20) == 0) {
+					log.info("*" + timeouts);
+				}
+				log.info(e.toString());
 			}
-			catch (Exception e) {
-				
-				log.info("Error with client request : "+e.getMessage());
-				loop=false;
-			}
+			//invalidate();
+			this.repaint();
+			//parent.repaint();
 		}
+		
+		
 		liveThread.stop();
 
 	}
