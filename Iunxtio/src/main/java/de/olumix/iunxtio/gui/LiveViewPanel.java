@@ -121,7 +121,7 @@ Thread liveThread = null;
 		while( loop ) {
 			
 			try {
-				//bufferedImage = camNetwork.getImageStream();
+				bufferedImage = camNetwork.getImageStream();
 				Thread.sleep(33); // expecting a frame rate around 25 fps so we can wait a little bit here for next frame
 			} catch (Exception e) {
 				timeouts++;
