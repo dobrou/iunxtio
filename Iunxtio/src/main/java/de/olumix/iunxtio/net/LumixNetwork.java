@@ -26,12 +26,16 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
@@ -39,8 +43,14 @@ import javax.imageio.ImageIO;
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.UpnpServiceImpl;
 import org.fourthline.cling.model.message.header.STAllHeader;
+import org.fourthline.cling.model.meta.DeviceDetails;
+import org.fourthline.cling.model.meta.LocalDevice;
+import org.fourthline.cling.model.meta.ManufacturerDetails;
+import org.fourthline.cling.model.meta.ModelDetails;
 import org.fourthline.cling.model.meta.RemoteDevice;
+import org.fourthline.cling.model.types.UDN;
 import org.fourthline.cling.registry.Registry;
+import org.fourthline.cling.registry.RegistryListener;
 
 import de.olumix.iunxtio.util.LumixUtils.Focus;
 
@@ -53,13 +63,15 @@ import de.olumix.iunxtio.util.LumixUtils.Focus;
  * This class is used to establish and maintain all basic networking with the Lumix cam
  */
 
-public class LumixNetwork {
+public class LumixNetwork implements RegistryListener {
 	
 private static Logger log = Logger.getLogger(LumixNetwork.class.getName());
 	
 private InetAddress cam_ip = null; //the camera ip adress
-private InetAddress local_ip = null; //the local ip adress required for UDP Server
 
+
+//----- Lumix constants ------
+private final String MODEL = "LUMIX";
 
 //----- HTTP ------------
 
@@ -94,17 +106,14 @@ private final String INCREMENT = "%2F256";
 public enum Actions {SINGLESHOT, APERTURE, SHUTTER, FOCUS, ZOOM}
 public enum Capabilities {LENS, CAMERA}
 
-
-
-
-
 //Cling
-private LumixRegistryListener listener = null;
+//private LumixRegistryListener listener = null;
 private UpnpService upnpService = null;
+private UDN udn = null;
 
+//internal stuff
 private LumixNetworkInfo info = null;
 
-private Thread lookupThread = null;
 
 //Image retrieval 
 
@@ -116,6 +125,8 @@ private DatagramPacket theRecievedPacket;
 private byte[] outBuffer;
 private byte[] inBuffer = new byte[30000];
 private int timeouts=0;  //for handling of timeouts
+
+private BufferedImage notConnectedImage = null;
 
 
 //---------------------------------------------------------
@@ -129,44 +140,45 @@ private int timeouts=0;  //for handling of timeouts
 		
 		//our info object which stores basic information about rg. network
 		info = new LumixNetworkInfo();
-		
-		// Create a new listener for UPNP  
-		listener = new LumixRegistryListener(info);
-		
-        // This will create necessary network resources for UPnP right away
-        log.info("Starting Cling...");
-        upnpService = new UpnpServiceImpl(listener);
-
-        // Send a search message to all devices and services, they should respond soon
-        // todo - only lookup the Lumix cams...
-        upnpService.getControlPoint().search(new STAllHeader());
-
-        // Let's wait 10 seconds for them to respond
-        log.info("Waiting 10 seconds before shutting down...");
-        try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			log.info(e.toString());
-		}   
         
-        //now staring the Lumix lookup thread, I don't want to stop the GUI init
-        lookupThread = new Thread() {
+        // load a special image to display the not connected state
+        notConnectedImage = getImage("images/NotConnected.png");
+        
+        //in case we need a new lookup we implement a simple timer task which checks every 20 sec 
+        Timer timer = new Timer();
+
+        // Start search immediately  then every 3 seconds when not connected
+        timer.schedule( new TimerTask() {
 			public void run() {
-				try {
-					lookUpLumixIp();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					log.info("starting the lookup thread failed!!!");
-					log.info (e.toString());
+				//we only start a lookup in case we are not connected
+				if (!info.isConnected()) {
+					
+					log.info("Searching Lumix camera...");
+					createUpnpService();
+					upnpService.getControlPoint().search(new STAllHeader());
+					}
 				}
-			};
-		};	
+			}, 0, 20000 );
+        
+        lookUpLocalIp();
+        
+	} 
+	
+	protected void createUpnpService() {
+		// This will create necessary network resources for UPnP right away
+        log.info("Starting Cling...");
+        upnpService = new UpnpServiceImpl(this);
 		
-		lookupThread.start();
 	}
 
+	/**
+	 * returns NetworkInof
+	 * @return connection
+	 */
 	
+	public LumixNetworkInfo getLumixNetworkInfo() {
+		return info;
+	}
 	
 	/**
 	 * returns whether the camera is connected or not
@@ -192,16 +204,47 @@ private int timeouts=0;  //for handling of timeouts
 	 */
 	public InetAddress lookUpLocalIp () {
 		
-		local_ip = null;
+		//local_ip = null;
+		InetAddress tmp_ip, local_ip = null;
 		
+		byte[] cam, local;
+		
+		if (!info.isConnected()) {  // if we are not connected we just return a valid ip
 			try {
 				local_ip = InetAddress.getLocalHost();
 			} catch (UnknownHostException e) {
 				// TODO Auto-generated catch block
 				log.info("Can't retrieve local ip adress!");
 			}
-            
-		
+		} else {  //ok, we are connected and several local ip's may exist. We have to return the right one
+			
+			cam = cam_ip.getAddress();
+			
+			Enumeration<NetworkInterface> nets;
+			try {
+				nets = NetworkInterface.getNetworkInterfaces();
+				for (NetworkInterface netint : Collections.list(nets)) {
+		        	Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+		            for (InetAddress inetAddress : Collections.list(inetAddresses)) {
+		                log.info("InetAddress:" + inetAddress.toString());
+		                tmp_ip = inetAddress;
+		                local = inetAddress.getAddress();
+		                log.info("TeilAdress:" + local[0] + local[1] + local[2]  + " Cam = " + cam[0] + cam[1] + cam[2] );
+		                if ((cam[0]==local[0]) && (cam[1]==local[1]) && (cam[2]==local[2])) {
+		                	local_ip = inetAddress;
+		                	log.info("############################################################################################## Calculated local InetAddress:" + local_ip.toString());
+		                	break;
+		                }
+		            }
+		        }
+
+			} catch (SocketException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}	
+   
+		log.info("#################Using the following local IP: " + local_ip.toString() + " Object is evaluated to ..." + local_ip.getHostAddress());
 		return local_ip;
 		
 	}
@@ -280,21 +323,14 @@ private int timeouts=0;  //for handling of timeouts
 	 * In case we get to many socket timeouts the socket connection is not recovering.
 	 * As a workaround the socket will be closed and opened again.
 	 */
-	private void socketReconnect() {
+	private void closeSocket() {
 		
         try {
         	liveViewSocket.disconnect();
     		liveViewSocket.close();
-    		
-    		Thread.sleep(1000);
-    		
-    		liveViewSocket = new DatagramSocket(serverPort);
-			liveViewSocket.setSoTimeout(2000);
-			enableRecMode();
-			log.info("Socket recreated due to massive timeouts");
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			log.info(e.toString());
+    		info.setReconnect(false); // so we do not call this again
+			//enableRecMode();
+			log.info("Socket closed");
 		}
         catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -307,8 +343,11 @@ private int timeouts=0;  //for handling of timeouts
 
 		int offset=132;
 		
-
 		
+		if (!info.isConnected()) {
+			//log.info("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not Connected returnung default picture");
+			return this.notConnectedImage;
+		}
 
 		try {   
 			liveViewSocket.receive(theRecievedPacket);
@@ -326,7 +365,6 @@ private int timeouts=0;  //for handling of timeouts
 		catch (SocketTimeoutException ste) {	
 			timeouts++;
 			if ((timeouts % 10) == 0) {
-				socketReconnect();
 				log.info("to many timeouts, reset the connection..." + timeouts);
 			}
 			throw ste;
@@ -346,9 +384,11 @@ private int timeouts=0;  //for handling of timeouts
 	private HTTPResponse sendGet(String cmd) throws Exception {
 		
 		HTTPResponse resp = null;
+		
+		if (!info.isConnected()) {return new HTTPResponse(404, "not connected");}
 
 		//Construct the requeststring for the cmd and create an URL object
-		String request = "http:/" + cam_ip.toString() + "/" + cmd;
+		String request = "http:/" + info.getCam_ip().toString() + "/" + cmd;
 		log.info("###########Url request = " + request);
 		try {
 			URL url = new URL(request);
@@ -522,5 +562,162 @@ private int timeouts=0;  //for handling of timeouts
 			return results;
 			
 		}
+		
+		
+		// listener classes
+		  
+		  public void remoteDeviceDiscoveryStarted(Registry registry,
+					RemoteDevice device) {
+				log.info("Discovery started: " + device.getDisplayString());
+			}
+
+			public void remoteDeviceDiscoveryFailed(Registry registry,
+					RemoteDevice device,
+					Exception ex) {
+				log.info("Discovery failed: " + device.getDisplayString() + " => " + ex);
+			}
+
+			public void remoteDeviceAdded(Registry registry, RemoteDevice device) {
+				
+				DeviceDetails dd = device.getDetails();
+				ManufacturerDetails md = dd.getManufacturerDetails();
+				ModelDetails mod = dd.getModelDetails();
+		
+				//debug stuff ...
+				
+				//log.info("Local IP is " + this.lookUpLocalIp().toString());
+				log.info("Remote device available: " + mod.getModelName() + " with Number " + mod.getModelNumber() + " and description " + mod.getModelDescription());
+				//log.info("ManufacturerURL: " + md.getManufacturerURI());
+				//log.info("UPC: " + dd.getUpc() + "PresentationURI " + dd.getPresentationURI() + "Base URL " + dd.getBaseURL());
+				//log.info("UDN: " + device.getIdentity().getUdn().toString());
+				//log.info("IP: " + device.getIdentity().getDescriptorURL().getHost());
+				// -------------------
+				
+				String ip = null;
+				String model = null;
+				String modelNumber = null;
+				
+				
+				if (device != null) {
+					//get the model name - we expect Lumix here
+					model= device.getDetails().getModelDetails().getModelName();
+					//Camera type - for later purposes
+					modelNumber= device.getDetails().getModelDetails().getModelNumber();
+					
+					if (model.equals(MODEL)) {
+						log.info("-->Found camera: " + model + " " + modelNumber);
+						ip = device.getIdentity().getDescriptorURL().getHost();
+						
+						try {
+							cam_ip = InetAddress.getByName(ip);
+							
+							//first we check if we already have had a connection
+							if (info.isReconnect()) {
+								log.info("trying a reconnect with the camera");
+							}
+							//storing the device UDN
+							udn = device.getIdentity().getUdn();
+							
+							//update the info object
+							info.setCam_ip(cam_ip);
+							info.setModel(model);
+							info.setModelNumber(modelNumber);
+							info.setConnected(true);
+							info.setReconnect(true); // need this flag for reconnect liveview
+							
+							//calling the camera 
+							this.getState(); // so the camera recognize that connection is established
+							this.prepareLiveView();
+							this.enableRecMode();
+							this.startStream();
+							
+							//debug stuff
+							RemoteDevice  foundDevice = (RemoteDevice) registry.getDevice(udn, true);
+							log.info("------------------------------>>>>>>>still in Registry? " + foundDevice.getDetails().getModelDetails().getModelName());
+							
+						} catch (UnknownHostException e) {
+							// TODO Auto-generated catch block
+							log.info(e.toString());
+							
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							log.info(e.toString());
+							
+						} 	
+						
+					} else {
+						log.info("Found something else: " + model + " " + modelNumber);
+						
+					}
+				}				
+			}
+
+			
+			public void remoteDeviceUpdated(Registry registry, RemoteDevice device) {
+
+				//log.info("Remote device updated: " + device.getDisplayString());
+			}
+
+			public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
+				
+				String ip = null;
+				log.info("Remote device removed: " + device.getDisplayString());
+				ip = device.getIdentity().getDescriptorURL().getHost();
+				
+				//was the Lumix removed?
+				
+				try {
+					if (InetAddress.getByName(ip).equals(info.getCam_ip()) ) {
+						log.info("------------------------------>>>>>>>Lumix Camera was removed or is no longer reachable");
+						info.disconnect();
+						//close the liveview socket
+						closeSocket();
+						
+					}
+				} catch (UnknownHostException e) {
+					
+					log.info(e.toString());
+				}
+				
+			}
+
+			
+			public void localDeviceAdded(Registry registry, LocalDevice device) {
+				//normally we should not care about any local devices
+
+				log.info("Local device added: " + device.getDisplayString());
+			}
+
+			public void localDeviceRemoved(Registry registry, LocalDevice device) {
+				//normally we should not care about any local devices
+
+				log.info("Local device removed: " + device.getDisplayString());
+			}
+
+			public void beforeShutdown(Registry registry) {
+
+				log.info("Before shutdown, the registry has devices: "+ registry.getDevices().size());
+			}
+
+			public void afterShutdown() {
+
+				log.info("Shutdown of registry complete!");
+
+			}
+			
+			
+			//-------- helper methods -------------
+			
+			private BufferedImage getImage(final String pathAndFileName) {
+				try {
+					final URL url = Thread.currentThread().getContextClassLoader().getResource(pathAndFileName);
+					return ImageIO.read(url );
+					//return (BufferedImage) Toolkit.getDefaultToolkit().getImage(url);
+				} catch (Exception e) {
+					log.info("Image not found ");
+					log.info(e.toString());
+					return null;
+				}
+			}
 		
 }

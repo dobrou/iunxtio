@@ -106,13 +106,11 @@ Thread liveThread = null;
 		
 		//ensure that everything is ready for live stream
 		try {
-			camNetwork.prepareLiveView();
-			camNetwork.enableRecMode();
-			camNetwork.startStream();
+			//camNetwork.prepareLiveView();
+			//camNetwork.enableRecMode();
+			//camNetwork.startStream();
 		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			log.info(e1.toString());
+			log.severe(e1.toString());
 		}
 		
 		int timeouts=0;

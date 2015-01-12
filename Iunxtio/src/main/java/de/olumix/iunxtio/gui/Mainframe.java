@@ -23,6 +23,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Timer;
 import java.util.logging.Logger;
 
 import javax.swing.JDialog;
@@ -31,11 +32,13 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.SwingUtilities;
 
 import de.olumix.iunxtio.camera.Camera;
 import de.olumix.iunxtio.camera.Lens;
 import de.olumix.iunxtio.net.LumixCommand;
 import de.olumix.iunxtio.net.LumixNetwork;
+import de.olumix.iunxtio.gui.SplashScreen;
 
 public class Mainframe extends JFrame {
 	
@@ -55,6 +58,8 @@ private Camera camera;
 //need control over this panel
 private LiveViewPanel liveView = null;
 private ControlPanel cameraControl = null;
+
+private SplashScreen splash = null;
 
 JLabel infoLine = null;
 
@@ -116,12 +121,9 @@ JLabel infoLine = null;
 		infoLine.setBackground(Color.ORANGE);
 		getContentPane().add(infoLine, BorderLayout.PAGE_END);
 		
-		
+		liveView.enableLiveView();
 		pack();
 		
-		//a first time setup seems to be required to set the camera into a defined remote state
-		initCamera();
-
 	}
 	
 	private void initCommunication() {
@@ -134,26 +136,30 @@ JLabel infoLine = null;
 		camera = new Camera();
 		camCommand = new LumixCommand(camNetwork, camera, lens);
 		
+		//staring the timer - we obtain in regular intervals information from cam
+		//this is required to keep liveview alive
+		//inside LumixCommand the run method will be triggered 
+		Timer timer = new Timer("MyTimer");
+        timer.scheduleAtFixedRate(camCommand, 0, 500);
+		
 	}
 	
 	
-	private void initCamera() {
+	
+	//TODO Remove !!!!
+	/*
+	private void initNetwork() {
 		
 		log.info("Initialize the camera for remote usage ");
-			
-		
-		while (!camNetwork.isConnected()) {
-			//just wait until we are connected
-			//todo display a sand watch or so ...
-		}
+
 		
 		try {
 				log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Trying to establish Live View...");
 				//sending the start stream command - todo move to liveview panel
-				camNetwork.getState();
+				//camNetwork.getState();
 				liveView.enableLiveView();
-				infoLine.setText(camNetwork.getCameraInfoString());
-				cameraControl.updateLensInfo();
+				//infoLine.setText(camNetwork.getCameraInfoString());
+				//cameraControl.updateLensInfo();
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -162,8 +168,8 @@ JLabel infoLine = null;
 			}
 
 		
-	}
+	} */
 	
 	
 
-}
+} //end of class

@@ -40,6 +40,9 @@ private static Logger log = Logger.getLogger(LumixNetworkInfo.class.getName());
 	
 private final String MODEL = "LUMIX";
 private LumixNetworkInfo info = null; //this class is used to store the ip of the lumix etc.	
+
+//ip adress of the discovered lumix camera
+private InetAddress cam_ip = null;
 	
 	
 	public LumixRegistryListener(LumixNetworkInfo _info) {
@@ -93,7 +96,7 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 		String ip = null;
 		String model = null;
 		String modelNumber = null;
-		InetAddress cam_ip;
+		
 		
 		if (device != null) {
 			//get the model name - we expect Lumix here
@@ -141,9 +144,22 @@ private LumixNetworkInfo info = null; //this class is used to store the ip of th
 	}
 
 	public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
+		
+		String ip = null;
 		log.info(
 				"Remote device removed: " + device.getDisplayString()
 				);
+		ip = device.getIdentity().getDescriptorURL().getHost();
+		try {
+			if (InetAddress.getByName(ip).equals(cam_ip) ) {
+				log.info("------------------------------>>>>>>>Lumix Camera was removed or is no longer reachable");
+				info.setConnected(false);
+				
+			}
+		} catch (UnknownHostException e) {
+			
+			log.info(e.toString());
+		}
 	}
 
 	

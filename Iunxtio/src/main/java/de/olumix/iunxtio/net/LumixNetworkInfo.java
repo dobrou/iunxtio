@@ -31,7 +31,10 @@ private static Logger log = Logger.getLogger(LumixNetworkInfo.class.getName());
 
 private String model = null;
 private String modelNumber = null;
-private boolean connected = false;
+private boolean connected = false; // Whether the camera is currently connected or not
+private boolean reconnect = false; // a dirty flag. In case of network failure set to true so all existing sockets can be closed.
+
+
 private InetAddress cam_ip = null; //the camera ip adress
 
 	LumixNetworkInfo(InetAddress ip, String _model, String _modelNumber) {
@@ -87,6 +90,7 @@ private InetAddress cam_ip = null; //the camera ip adress
 		model = null;
 		modelNumber = null;
 		connected = false;	
+		reconnect = true;
 		
 		log.info("### disconnected");
 	}
@@ -115,6 +119,7 @@ private InetAddress cam_ip = null; //the camera ip adress
 
 	/**
 	 * @param connected the connected to set
+	 * Carefully checking if we have an IP adress
 	 */
 	public void setConnected(boolean _connected) {
 		connected = _connected;
@@ -124,6 +129,17 @@ private InetAddress cam_ip = null; //the camera ip adress
 			connected = false;
 		}
 		
+	}
+	
+	/**
+	 * @param modelNumber the modelNumber to set
+	 */
+	public void setReconnect(boolean _reconnect) {
+		this.reconnect = _reconnect;
+	}
+	
+	public boolean isReconnect() {
+		return reconnect;
 	}
 
 }

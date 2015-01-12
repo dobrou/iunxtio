@@ -228,7 +228,7 @@ private int focusValue = -1;
 	}
 	
 	public void updateLensInfo() {
-		cameraCommand.lensInfo();
+		cameraCommand.updateLensInfo();
 		adjustApertureSlider();
 	}
 	

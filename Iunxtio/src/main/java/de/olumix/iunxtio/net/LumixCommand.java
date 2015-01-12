@@ -17,8 +17,20 @@
  */
 package de.olumix.iunxtio.net;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
+import org.fourthline.cling.model.meta.DeviceDetails;
+import org.fourthline.cling.model.meta.LocalDevice;
+import org.fourthline.cling.model.meta.ManufacturerDetails;
+import org.fourthline.cling.model.meta.ModelDetails;
+import org.fourthline.cling.model.meta.RemoteDevice;
+import org.fourthline.cling.model.types.UDN;
+import org.fourthline.cling.registry.Registry;
+import org.fourthline.cling.registry.RegistryListener;
 
 import de.olumix.iunxtio.camera.Camera;
 import de.olumix.iunxtio.camera.Lens;
@@ -32,10 +44,12 @@ import de.olumix.iunxtio.util.LumixUtils.Focus;
  * from a Photograph's perspective.
  * It does not handle any low level network functionality. It also ensures that the Camera and Lens state is updated
  * based on the capabilities of the camera/lens combination.
+ * It extends TimerTAsk so the network, camera & lens state can be checked on a regular basis.
  */
-public class LumixCommand {
+public class LumixCommand extends TimerTask {
 	
 private LumixNetwork camNetwork = null; //this class encapsulates basic network handling
+private LumixNetworkInfo info = null; // to get the network state
 private Camera camera = null; //camera object which stores all capabilities of the camera
 private Lens lens = null; //lens object which stores all capabilities of the attached lens
 
@@ -54,8 +68,7 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 		camNetwork = ln;
 		camera = c;
 		lens = l;
-		
-		// TODO Auto-generated constructor stub
+		info = camNetwork.getLumixNetworkInfo();
 	} 
 	
 	//init/update the camera and lens objects
@@ -66,16 +79,17 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 	public boolean singleShot(){
 		
 		boolean ok = false;
-		
+
 		try {
 			ok = camNetwork.executeAction(Actions.SINGLESHOT, 0);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			log.info(e.toString());
+			e.printStackTrace(System.out);
+			log.severe(e.toString());
 			;
 		}
 		
-		return true;
+		return ok;
 	}
 	
 	public boolean setAperture(int value){
@@ -86,13 +100,13 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 			ok = camNetwork.executeAction(Actions.APERTURE, value);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			log.info(e.toString());
+			log.severe(e.toString());
 		}
 		
 		return ok;
 	}
 	
-	public void lensInfo(){
+	public void updateLensInfo(){
 		String result = null;
 		String tmp = null;
 		
@@ -111,7 +125,7 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 		//example result is: ok,2304/256,434/256,3072/256,0/256,0,off,45,45,on,128/1024
 		//first we will split the string
 		String[] values = result.split( Pattern.quote( "," ) );
-		log.info("Lens value count " + values.length);
+		//log.info("Lens value count " + values.length);
 		
 		if (values[0].equals("ok")) {
 			//get the value for closed aperture
@@ -141,7 +155,7 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 			
 			//values[10] = ???????
 			lens.init(minAperture, maxAperture, minFocal, maxFocal, isPower, isNative);
-			log.info("Lens Info = " + lens.toString());
+			//log.info("Lens Info = " + lens.toString());
 			
 			
 		} else {
@@ -178,6 +192,27 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 		return lens;
 	}
 	
+	
+	
+	// ------- Tasks --------
+	
+	//check if any lens info has changed
+	// update camera state
+	// update network state
+	
+	@Override
+    public void run() {
+		
+		//log.info("Lumix Command is executing timer");
+		
+		info = camNetwork.getLumixNetworkInfo();
+        //update LensInfo
+		if (info.isConnected()) {
+			updateLensInfo();
+		}
+		
+   }
+	
 	//helper class for parsing
 	
 	/**
@@ -195,6 +230,6 @@ private static Logger log = Logger.getLogger(HTTPResponse.class.getName());
 	    return pos >= 0 ? string.substring( 0, pos ) : string;
 	  }
 	  
-	  
+  
 
 }
